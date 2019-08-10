@@ -1,8 +1,8 @@
 {
-  "name": "Bryan-Cee",
+  "name": "bryan-cee.github.io",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://bryan-cee.github.io/Bryan-Cee/",
+  "homepage": "https://bryan-cee.github.io",
   "dependencies": {
     "gh-pages": "2.0.1",
     "node-sass": "^4.12.0",
