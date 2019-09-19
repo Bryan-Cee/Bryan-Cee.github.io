@@ -2,28 +2,33 @@ export default {
   technicalSkills: [
     {
       id: 1,
-      stack: 'Python/Flask',
-      level: '60%'
+      stack: 'Git',
+      level: '98%'
     },
     {
       id: 2,
+      stack: 'Javascript/ReactJS',
+      level: '85%'
+    },
+    {
+      id: 3,
+      stack: 'Javascript/VanillaJS',
+      level: '85%'
+    },
+    {
+      id: 4,
+      stack: 'HTML&CSS',
+      level: '80%'
+    },
+    {
+      id: 5,
       stack: 'Python/Django',
       level: '70%'
     },
     {
-      id: 3,
-      stack: 'Javascript/ReactJS',
-      level: '80%'
-    },
-    {
-      id: 4,
-      stack: 'Javascript/VanillaJS',
-      level: '70%'
-    },
-    {
-      id: 5,
-      stack: 'HTML&CSS',
-      level: '80%'
+      id: 6,
+      stack: 'Python/Flask',
+      level: '60%'
     }
   ],
   softSkills: [
@@ -37,29 +42,29 @@ export default {
     },
     {
       attribute: 'Professionalism',
-      level: 80
+      level: 85
     },
     {
       attribute: 'Project Management',
-      level: 85
+      level: 90
     }
   ],
-  frameworks: ['Python', 'Django', 'Flask', 'HTML', 'CSS', 'ReactJS', 'Vanilla JS'],
+  frameworks: ['ReactJS', 'Vanilla JS', 'HTML', 'CSS', 'Python', 'Django', 'Flask'],
   stacks: [
     {
       id: 1,
       title: 'API Development',
-      description: 'Proficient in building robust and scalable REST APIs. I have ample experience building APIs with GraphQL. Skilled in building APIs and web backend with Python/Django, NodeJS, Express, Apollo Server.'
+      description: 'Proficient in building robust and scalable REST APIs. I have ample experience building APIs with GraphQL. Skilled in building APIs and web backend with Django, NodeJS, Express, Apollo.'
     },
     {
       id: 2,
       title: 'Web Development',
-      description: 'Proficient in building professional web frontend with top frameworks like ReactJS and VanillaJS.'
+      description: 'Proficient in building professional web frontend with top frameworks like ReactJS and VanillaJS. I also have worked with NextJS for server side rendered applications'
     },
     {
       id: 3,
       title: 'UI Design',
-      description: 'Using the best design tools like AdobeXD and Sketch to deliver the better UI designs.'
+      description: 'Using the best design tools like AdobeXD and Sketch to deliver industry standard UI designs that can be adopted in production. I fancy design and enjoy making websites presentable'
     }
   ],
   userInfo: {
