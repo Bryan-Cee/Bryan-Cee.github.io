@@ -83,7 +83,7 @@ export default {
       {
         id: 2,
         title: 'Product Owner',
-        timeline: 'Jun 2019 – Present • 11 mos',
+        timeline: 'Jun 2019 – Sep 2019 • 4 mos',
         company: 'Andela',
         description: `<strong>Responsibilities</strong> <br />
         <ul>
@@ -96,7 +96,7 @@ export default {
       {
         id: 1,
         title: 'Software Engineer',
-        timeline: 'Nov 2018 – Present • 11 mos',
+        timeline: 'Nov 2018 – Present • 10 mos',
         company: 'Andela',
         description: `<p>
                 Andela provides companies with access to the top 1% of global tech talent.
