@@ -81,6 +81,26 @@ export default {
   stories: {
     experiences: [
       {
+        id: 4,
+        title: 'Freelance Developer',
+        timeline: 'Oct 2019 – Present',
+        company: 'Freelance',
+        description: `<strong>Responsibilities</strong> <br />
+        <ul>
+          <li>Work as a freelancer on various projects offered by clients who need websites that work and backend systems that perform well.</li>
+        </ul>`
+      },
+      {
+        id: 3,
+        title: 'Software Development Engineer in Testing',
+        timeline: 'Oct 2019 – Present',
+        company: 'Microsoft via Techno Brain Group',
+        description: `<strong>Responsibilities</strong> <br />
+        <ul>
+          <li>Develop test suites for windows systems.</li>
+        </ul>`
+      },
+      {
         id: 2,
         title: 'Product Owner',
         timeline: 'Jun 2019 – Sep 2019 • 4 mos',
@@ -90,13 +110,12 @@ export default {
           <li>Developed user stories documenting business and functional requirements. Facilitated feasibility and backlog grooming discussions.</li>
           <li>Maintained product backlogs and determined story candidates for release based on value, feasibility, and business and customer impact.</li>
           <li>Tested requirements at all stages of the project, including functional validation and smoke testing of development deliverables to ensure compliance with the functional requirements as specified.</li>
-        </ul>\`
-`
+        </ul>`
       },
       {
         id: 1,
         title: 'Software Engineer',
-        timeline: 'Nov 2018 – Present • 10 mos',
+        timeline: 'Nov 2018 – Oct 2019 • 1 Year',
         company: 'Andela',
         description: `<p>
                 Andela provides companies with access to the top 1% of global tech talent.
@@ -108,16 +127,16 @@ export default {
                 </p><br/>
                 <strong>Responsibilities</strong> <br/>
                 <ul>
-                  <li>Ability to handle highly stressed situations and unexpected errors in an efficient manner.</li> 
-                  <li>Attending weekly client meetings to discuss the specifics of the automated tests. Backlog negotiation and project estimations.</li> 
-                  <li>Coaching and mentoring.</li> 
-                  <li>Coding, testing and fixing programming errors.</li> 
-                  <li>Conceptual, logical and physical database design.</li> 
-                  <li>Conduct training for new developers.</li> 
-                  <li>Creating and executing unit test cases.</li> 
-                  <li>Fixing some script related bugs.</li> 
-                  <li>Involved in the release and delivery process of the product.</li> 
-                  <li>On call during downtime, assisted in mitigating several production emergencies. Use JavaScript stack for back end and front end applications. </li> 
+                  <li>Ability to handle highly stressed situations and unexpected errors in an efficient manner.</li>
+                  <li>Attending weekly client meetings to discuss the specifics of the automated tests. Backlog negotiation and project estimations.</li>
+                  <li>Coaching and mentoring.</li>
+                  <li>Coding, testing and fixing programming errors.</li>
+                  <li>Conceptual, logical and physical database design.</li>
+                  <li>Conduct training for new developers.</li>
+                  <li>Creating and executing unit test cases.</li>
+                  <li>Fixing some script related bugs.</li>
+                  <li>Involved in the release and delivery process of the product.</li>
+                  <li>On call during downtime, assisted in mitigating several production emergencies. Use JavaScript stack for back end and front end applications. </li>
                 </ul>`
       }
     ],
