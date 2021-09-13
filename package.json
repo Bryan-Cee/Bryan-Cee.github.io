@@ -1,44 +1,23 @@
 {
-  "name": "profile",
+  "name": "bryan-cee.github.io",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://Bryan-Cee.github.io/",
-  "dependencies": {
-    "eslint": "5.12.0",
-    "eslint-config-airbnb": "^17.1.0",
-    "firebase": "^5.9.1",
-    "firebase-admin": "^8.0.0",
-    "firebase-functions": "^2.3.1",
-    "gh-pages": "^2.1.1",
-    "prop-types": "^15.7.2",
-    "react": "^16.8.4",
-    "react-async-script-loader": "^0.3.0",
-    "react-dom": "^16.8.4",
-    "react-router": "^5.0.0",
-    "react-router-dom": "^5.0.0",
-    "react-scripts": "2.1.8",
-    "react-socks": "^1.0.1",
-    "react-toastify": "^5.0.0-rc.3"
-  },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "release": "react-scripts build && firebase deploy",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
-    "deploy:functions": "firebase deploy --only functions",
-    "deploy:hosting": "firebase deploy --only hosting",
-    "start:emulator": "firebase emulators:start"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "eslintConfig": {
-    "extends": "react-app"
+  "dependencies": {
+    "graphql-request": "^3.5.0",
+    "next": "11.1.2",
+    "react": "17.0.2",
+    "react-dom": "17.0.2"
   },
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ]
+  "devDependencies": {
+    "@types/react": "17.0.20",
+    "eslint": "7.32.0",
+    "eslint-config-next": "11.1.2",
+    "typescript": "4.4.3"
+  }
 }
