@@ -1,25 +1,5 @@
 .container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
   background-color: #0077b6;
-  
-}
-
-.nav {
-  display: inline-flex;
-  align-items: center;
-  width: 100%;
-  height: 4em;
-  justify-content: flex-end;
-  padding: 0 4em;
-}
-
-.nav li {
-  list-style: none;
-  padding: 0.8em 2em;
-  font-size: 22px;
 }
 
 .main {
