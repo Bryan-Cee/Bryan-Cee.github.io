@@ -65,19 +65,19 @@ module.exports = () => {
     eslint: {
       dirs: ['app', 'components', 'layouts', 'scripts'],
     },
-    // output: 'export',
+    output: 'export',
     distDir: 'build',
     images: {
       domains: ['picsum.photos'],
     },
-    async headers() {
-      return [
-        {
-          source: '/(.*)',
-          headers: securityHeaders,
-        },
-      ]
-    },
+    // async headers() {
+    //   return [
+    //     {
+    //       source: '/(.*)',
+    //       headers: securityHeaders,
+    //     },
+    //   ]
+    // },
     webpack: (config, options) => {
       config.module.rules.push({
         test: /\.svg$/,
