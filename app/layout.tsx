@@ -1,7 +1,7 @@
 import 'css/tailwind.css'
 import 'pliny/search/algolia.css'
 
-import { Space_Grotesk, Source_Code_Pro, Advent_Pro, Nunito } from 'next/font/google'
+import { Space_Grotesk } from 'next/font/google'
 import { Analytics, AnalyticsConfig } from 'pliny/analytics'
 import { SearchProvider, SearchConfig } from 'pliny/search'
 import Header from '@/components/Header'
@@ -11,10 +11,10 @@ import siteMetadata from '@/data/siteMetadata'
 import { ThemeProviders } from './theme-providers'
 import { Metadata } from 'next'
 
-const nunito = Nunito({
+const SpaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   display: 'optional',
-  variable: '--font-nunito',
+  variable: '--font-space-grotesk',
 })
 
 export const metadata: Metadata = {
@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang={siteMetadata.language}
-      className={`${nunito.variable} scroll-smooth`}
+      className={`${SpaceGrotesk.variable} scroll-smooth`}
       suppressHydrationWarning
     >
       <link rel="apple-touch-icon" sizes="76x76" href="/static/favicons/apple-touch-icon.png" />
