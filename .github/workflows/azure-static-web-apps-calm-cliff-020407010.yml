@@ -48,3 +48,16 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_CALM_CLIFF_020407010 }}
           action: 'close'
+
+  upload_to_azure_blob_storage:
+    name: Upload static content to blob storage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: bacongobbler/azure-blob-storage-upload@main
+        with:
+          source_dir: _dist
+          container_name: $web
+          sas_token: ${{ secrets.ConnectionString }}
+          extra_args: '--pattern *.tar.gz'
+          overwrite: 'true'
