@@ -48,14 +48,3 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_CALM_CLIFF_020407010 }}
           action: 'close'
-
-  upload_to_azure_blob_storage:
-    name: Upload static content to blob storage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: LanceMcCarthy/Action-AzureBlobUpload@v2
-        with:
-          source_folder: ./_dist
-          container_name: $web
-          connection_string: ${{ secrets.ConnectionString }}
