@@ -5,9 +5,9 @@ const siteMetadata = {
   headerTitle: "Bryce's Web",
   description: 'A platform to share the amazing ideas I have',
   language: 'en-us',
-  theme: 'system', // system, dark or light
-  siteUrl: 'https://tailwind-nextjs-starter-blog.vercel.app',
-  siteRepo: 'https://github.com/timlrx/tailwind-nextjs-starter-blog',
+  theme: 'system',
+  siteUrl: 'https://brycesweb.com',
+  siteRepo: 'https://github.com/Bryan-Cee/Bryan-Cee.github.io',
   siteLogo: '/static/images/logo.png',
   socialBanner: '/static/images/twitter-card.png',
   email: 'cheruiyotbryan@gmail.com',
