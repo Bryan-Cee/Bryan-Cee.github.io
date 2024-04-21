@@ -1,0 +1,147 @@
+---
+title: 'GitHub Authorization with GraphQL and Apollo Server'
+date: '2019-12-02'
+lastmod: '2019-12-02'
+tags: ['graphql', 'apollo server', 'guide']
+draft: false
+summary: 'Setting up github authorization with GraphQL and Apollo Server'
+authors: ['default']
+---
+
+## Introduction
+
+I have been working on a project recently that uses _“Sign up with Github”_ and I thought it would be nice to share a bit of my experience using Github authorization with Graphql and Apollo Server.
+
+**Authorization**: it is the process of giving permission to a user to access a certain resource. This basically occurs after authentication.
+
+Let’s get right to it,
+
+### Setting up a Github OAuth.
+
+This whole process will need you to create a Github App.
+
+ 1. Login to your Github account and click your user icon on the top right to reveal a drop-down menu with settings as one of the options and click on it.
+ <figure class="ahu ahv ahw ahx ahy xw lv lw paragraph-image">
+    <div class="lv lw amk">
+      <picture>
+          <source srcset="https://miro.medium.com/v2/resize:fit:640/format:webp/1*BNjX5KJSiaW9Xs54NG6FVQ.png 640w, https://miro.medium.com/v2/resize:fit:720/format:webp/1*BNjX5KJSiaW9Xs54NG6FVQ.png 720w, https://miro.medium.com/v2/resize:fit:750/format:webp/1*BNjX5KJSiaW9Xs54NG6FVQ.png 750w, https://miro.medium.com/v2/resize:fit:786/format:webp/1*BNjX5KJSiaW9Xs54NG6FVQ.png 786w, https://miro.medium.com/v2/resize:fit:828/format:webp/1*BNjX5KJSiaW9Xs54NG6FVQ.png 828w, https://miro.medium.com/v2/resize:fit:1100/format:webp/1*BNjX5KJSiaW9Xs54NG6FVQ.png 1100w, https://miro.medium.com/v2/resize:fit:782/format:webp/1*BNjX5KJSiaW9Xs54NG6FVQ.png 782w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 391px" type="image/webp" />
+          <source data-testid="og" srcset="https://miro.medium.com/v2/resize:fit:640/1*BNjX5KJSiaW9Xs54NG6FVQ.png 640w, https://miro.medium.com/v2/resize:fit:720/1*BNjX5KJSiaW9Xs54NG6FVQ.png 720w, https://miro.medium.com/v2/resize:fit:750/1*BNjX5KJSiaW9Xs54NG6FVQ.png 750w, https://miro.medium.com/v2/resize:fit:786/1*BNjX5KJSiaW9Xs54NG6FVQ.png 786w, https://miro.medium.com/v2/resize:fit:828/1*BNjX5KJSiaW9Xs54NG6FVQ.png 828w, https://miro.medium.com/v2/resize:fit:1100/1*BNjX5KJSiaW9Xs54NG6FVQ.png 1100w, https://miro.medium.com/v2/resize:fit:782/1*BNjX5KJSiaW9Xs54NG6FVQ.png 782w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 391px"/>
+          <img alt="" class="bn xb xx c" width="391" height="842" loading="lazy" role="presentation" src="https://miro.medium.com/v2/resize:fit:782/1*BNjX5KJSiaW9Xs54NG6FVQ.png" />
+      </picture>
+    </div>
+  </figure>
+
+  2. On the settings page select the _“Developer Settings”_ on the left panel.
+  <figure class="ahu ahv ahw ahx ahy xw lv lw paragraph-image">
+    <div class="lv lw aml">
+      <picture>
+        <source srcset="https://miro.medium.com/v2/resize:fit:640/format:webp/1*8L8Vw-PlfbOlV0eIKjvrWw.png 640w, https://miro.medium.com/v2/resize:fit:720/format:webp/1*8L8Vw-PlfbOlV0eIKjvrWw.png 720w, https://miro.medium.com/v2/resize:fit:750/format:webp/1*8L8Vw-PlfbOlV0eIKjvrWw.png 750w, https://miro.medium.com/v2/resize:fit:786/format:webp/1*8L8Vw-PlfbOlV0eIKjvrWw.png 786w, https://miro.medium.com/v2/resize:fit:828/format:webp/1*8L8Vw-PlfbOlV0eIKjvrWw.png 828w, https://miro.medium.com/v2/resize:fit:1100/format:webp/1*8L8Vw-PlfbOlV0eIKjvrWw.png 1100w, https://miro.medium.com/v2/resize:fit:976/format:webp/1*8L8Vw-PlfbOlV0eIKjvrWw.png 976w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 488px" type="image/webp" />
+        <source data-testid="og" srcset="https://miro.medium.com/v2/resize:fit:640/1*8L8Vw-PlfbOlV0eIKjvrWw.png 640w, https://miro.medium.com/v2/resize:fit:720/1*8L8Vw-PlfbOlV0eIKjvrWw.png 720w, https://miro.medium.com/v2/resize:fit:750/1*8L8Vw-PlfbOlV0eIKjvrWw.png 750w, https://miro.medium.com/v2/resize:fit:786/1*8L8Vw-PlfbOlV0eIKjvrWw.png 786w, https://miro.medium.com/v2/resize:fit:828/1*8L8Vw-PlfbOlV0eIKjvrWw.png 828w, https://miro.medium.com/v2/resize:fit:1100/1*8L8Vw-PlfbOlV0eIKjvrWw.png 1100w, https://miro.medium.com/v2/resize:fit:976/1*8L8Vw-PlfbOlV0eIKjvrWw.png 976w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 488px" />
+        <img alt="" class="bn xb xx c" width="488" height="288" loading="lazy" role="presentation" src="https://miro.medium.com/v2/resize:fit:976/1*8L8Vw-PlfbOlV0eIKjvrWw.png"/>
+      </picture>
+    </div>
+  </figure>
+
+  3. On the developer settings page select “OAuth Apps” on the left side panel. Create a new OAuth app by pressing the button on the right.
+  <figure class="ahu ahv ahw ahx ahy xw lv lw paragraph-image">
+    <div role="button" tabindex="0" class="amn amo by amp bn amq">
+      <div class="lv lw amm">
+        <picture>
+          <source srcset="https://miro.medium.com/v2/resize:fit:640/format:webp/1*bPtzPmAJLVUtO6OydtFHnQ.png 640w, https://miro.medium.com/v2/resize:fit:720/format:webp/1*bPtzPmAJLVUtO6OydtFHnQ.png 720w, https://miro.medium.com/v2/resize:fit:750/format:webp/1*bPtzPmAJLVUtO6OydtFHnQ.png 750w, https://miro.medium.com/v2/resize:fit:786/format:webp/1*bPtzPmAJLVUtO6OydtFHnQ.png 786w, https://miro.medium.com/v2/resize:fit:828/format:webp/1*bPtzPmAJLVUtO6OydtFHnQ.png 828w, https://miro.medium.com/v2/resize:fit:1100/format:webp/1*bPtzPmAJLVUtO6OydtFHnQ.png 1100w, https://miro.medium.com/v2/resize:fit:1400/format:webp/1*bPtzPmAJLVUtO6OydtFHnQ.png 1400w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 700px" type="image/webp" />
+          <source data-testid="og" srcset="https://miro.medium.com/v2/resize:fit:640/1*bPtzPmAJLVUtO6OydtFHnQ.png 640w, https://miro.medium.com/v2/resize:fit:720/1*bPtzPmAJLVUtO6OydtFHnQ.png 720w, https://miro.medium.com/v2/resize:fit:750/1*bPtzPmAJLVUtO6OydtFHnQ.png 750w, https://miro.medium.com/v2/resize:fit:786/1*bPtzPmAJLVUtO6OydtFHnQ.png 786w, https://miro.medium.com/v2/resize:fit:828/1*bPtzPmAJLVUtO6OydtFHnQ.png 828w, https://miro.medium.com/v2/resize:fit:1100/1*bPtzPmAJLVUtO6OydtFHnQ.png 1100w, https://miro.medium.com/v2/resize:fit:1400/1*bPtzPmAJLVUtO6OydtFHnQ.png 1400w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 700px" />
+          <img alt="" class="bn xb xx c" width="700" height="106" loading="lazy" role="presentation" src="https://miro.medium.com/v2/resize:fit:1400/1*bPtzPmAJLVUtO6OydtFHnQ.png" />
+        </picture>
+      </div>
+    </div>
+  </figure>
+
+  4. Add the following setting to create a new OAuth App.
+
+      - Application name: Simple Awesome App
+      - Homepage URL: http://localhost:3000
+      - Application description: A simple awesome app
+      - Authorization callback URL: http://localhost:3000/auth/callback
+
+    <figure class="ahu ahv ahw ahx ahy xw lv lw paragraph-image">
+      <div role="button" tabindex="0" class="amn amo by amp bn amq">
+        <div class="lv lw anb">
+          <picture>
+            <source srcset="https://miro.medium.com/v2/resize:fit:640/format:webp/1*NcNL5EkbHyPfdmeGx9rCSA.png 640w, https://miro.medium.com/v2/resize:fit:720/format:webp/1*NcNL5EkbHyPfdmeGx9rCSA.png 720w, https://miro.medium.com/v2/resize:fit:750/format:webp/1*NcNL5EkbHyPfdmeGx9rCSA.png 750w, https://miro.medium.com/v2/resize:fit:786/format:webp/1*NcNL5EkbHyPfdmeGx9rCSA.png 786w, https://miro.medium.com/v2/resize:fit:828/format:webp/1*NcNL5EkbHyPfdmeGx9rCSA.png 828w, https://miro.medium.com/v2/resize:fit:1100/format:webp/1*NcNL5EkbHyPfdmeGx9rCSA.png 1100w, https://miro.medium.com/v2/resize:fit:1400/format:webp/1*NcNL5EkbHyPfdmeGx9rCSA.png 1400w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 700px" type="image/webp" />
+            <source data-testid="og" srcset="https://miro.medium.com/v2/resize:fit:640/1*NcNL5EkbHyPfdmeGx9rCSA.png 640w, https://miro.medium.com/v2/resize:fit:720/1*NcNL5EkbHyPfdmeGx9rCSA.png 720w, https://miro.medium.com/v2/resize:fit:750/1*NcNL5EkbHyPfdmeGx9rCSA.png 750w, https://miro.medium.com/v2/resize:fit:786/1*NcNL5EkbHyPfdmeGx9rCSA.png 786w, https://miro.medium.com/v2/resize:fit:828/1*NcNL5EkbHyPfdmeGx9rCSA.png 828w, https://miro.medium.com/v2/resize:fit:1100/1*NcNL5EkbHyPfdmeGx9rCSA.png 1100w, https://miro.medium.com/v2/resize:fit:1400/1*NcNL5EkbHyPfdmeGx9rCSA.png 1400w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 700px" />
+            <img alt="" class="bn xb xx c" width="700" height="637" loading="lazy" role="presentation" src="https://miro.medium.com/v2/resize:fit:1400/1*NcNL5EkbHyPfdmeGx9rCSA.png" />
+          </picture>
+        </div>
+      </div>
+      <figcaption class="text-center" data-selectable-paragraph="">New OAuth page</figcaption>
+    </figure>
+
+  5. Finally, register the application by clicking the _“Register application”_ button.
+
+  On the next page, you should copy your `Client ID` and `Client Secret`. The two are important and should not be hardcoded into your codebase but rather store the keys in a .env file. They should be saved as follows in the env file.
+
+  <figure class="ahu ahv ahw ahx ahy xw lv lw paragraph-image">
+    <div role="button" tabindex="0" class="amn amo by amp bn amq">
+      <div class="lv lw anc">
+        <picture>
+          <source srcset="https://miro.medium.com/v2/resize:fit:640/format:webp/1*mGWSBPZ4jIyUkWqUyIyBvA.png 640w, https://miro.medium.com/v2/resize:fit:720/format:webp/1*mGWSBPZ4jIyUkWqUyIyBvA.png 720w, https://miro.medium.com/v2/resize:fit:750/format:webp/1*mGWSBPZ4jIyUkWqUyIyBvA.png 750w, https://miro.medium.com/v2/resize:fit:786/format:webp/1*mGWSBPZ4jIyUkWqUyIyBvA.png 786w, https://miro.medium.com/v2/resize:fit:828/format:webp/1*mGWSBPZ4jIyUkWqUyIyBvA.png 828w, https://miro.medium.com/v2/resize:fit:1100/format:webp/1*mGWSBPZ4jIyUkWqUyIyBvA.png 1100w, https://miro.medium.com/v2/resize:fit:1400/format:webp/1*mGWSBPZ4jIyUkWqUyIyBvA.png 1400w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 700px" type="image/webp"/>
+          <source data-testid="og" srcset="https://miro.medium.com/v2/resize:fit:640/1*mGWSBPZ4jIyUkWqUyIyBvA.png 640w, https://miro.medium.com/v2/resize:fit:720/1*mGWSBPZ4jIyUkWqUyIyBvA.png 720w, https://miro.medium.com/v2/resize:fit:750/1*mGWSBPZ4jIyUkWqUyIyBvA.png 750w, https://miro.medium.com/v2/resize:fit:786/1*mGWSBPZ4jIyUkWqUyIyBvA.png 786w, https://miro.medium.com/v2/resize:fit:828/1*mGWSBPZ4jIyUkWqUyIyBvA.png 828w, https://miro.medium.com/v2/resize:fit:1100/1*mGWSBPZ4jIyUkWqUyIyBvA.png 1100w, https://miro.medium.com/v2/resize:fit:1400/1*mGWSBPZ4jIyUkWqUyIyBvA.png 1400w" sizes="(min-resolution: 4dppx) and (max-width: 700px) 50vw, (-webkit-min-device-pixel-ratio: 4) and (max-width: 700px) 50vw, (min-resolution: 3dppx) and (max-width: 700px) 67vw, (-webkit-min-device-pixel-ratio: 3) and (max-width: 700px) 65vw, (min-resolution: 2.5dppx) and (max-width: 700px) 80vw, (-webkit-min-device-pixel-ratio: 2.5) and (max-width: 700px) 80vw, (min-resolution: 2dppx) and (max-width: 700px) 100vw, (-webkit-min-device-pixel-ratio: 2) and (max-width: 700px) 100vw, 700px" />
+          <img alt="" class="bn xb xx c" width="700" height="329" loading="lazy" role="presentation" src="https://miro.medium.com/v2/resize:fit:1400/1*mGWSBPZ4jIyUkWqUyIyBvA.png"/>
+        </picture>
+      </div>
+    </div>
+  </figure>
+
+
+  ```
+  CLIENT_ID="your client_id"
+  CLIENT_SECRET="your client_secret"
+  STATE="a non readable string that we will use for security purposes"
+  ```
+
+### The Authorization Process.
+
+There are two ways that can be used to implement authorization which are:
+
+  - **Web application flow**
+  - **Non-Web application flow**
+
+We will use the web application flow method in this tutorial.
+
+### Web application flow
+
+The flow simply goes as follows:
+
+<div className="ml-4">
+  * Users are redirected to request their GitHub identity.
+  * Users are redirected back to your site by GitHub
+  * Your app accesses the API with the user’s access token
+</div>
+
+1. #### Requesting a user’s identity from GitHub.
+
+The URL that will be used in this process is
+
+```
+GET https://github.com/login/oauth/authorize
+```
+
+To authorize the user you can embed the link onto a button that has the Github icon with a “sign in with” text beside it like so using react.
+
+```jsx
+const Login = () => (
+  <div>
+    <a href={`https://github.com/login/oauth/authorize?client_id=${process.env.CLIENT_ID}&state=${process.env.STATE}`}>
+      <span>Sign up with Github</sapn>
+      <img src="add a github logo image" alt="github" />
+    </a>
+  </div>
+);
+```
+
+This is where we will use the GitHub `Client_ID` we saved in our `.env` file and append it to the URL as a query parameter with the key `client_id`. The `state` parameter is used to protect against cross-site request forgery attacks.
+
+2. #### Redirecting the user back to your site from GitHub.
+
+If the user accepts your request, GitHub redirects back to your site with a temporary `code` in a code parameter as well as the state you provided in the previous step in a `state` parameter. The temporary code will expire after 10 minutes. If the states don't match, then a third party created the request, and you should abort the process.
+
+The continuation of this article is coming up soon.
