@@ -1,0 +1,230 @@
+---
+title: 'Automating SemVer for TypeScript: Building ts-semver-detector with a Little Help from AI'
+date: '2025-04-14'
+lastmod: '2025-04-14'
+tags: ['TypeScript', 'SemVer', 'AI', 'Programming']
+draft: true
+summary: 'The SemVer Dilemma in a Growing TypeScript Codebase'
+authors: ['default']
+---
+
+## The SemVer Dilemma in a Growing TypeScript Codebase
+
+As our TypeScript codebase grew (especially inside a monorepo with many packages), keeping track of semantic versioning became a headache. In theory, Semantic Versioning (SemVer) is straightforward: **Major** version bumps for incompatible API changes, **Minor** for backward-compatible new features, and **Patch** for bug fixes ([Why TypeScript Doesn't Follow Strict Semantic Versioning | Learning TypeScript](https://www.learningtypescript.com/articles/why-typescript-doesnt-follow-strict-semantic-versioning#:~:text=,make%20backward%20compatible%20bug%20fixes)). In practice, knowing which category a change falls into can be tricky – _especially when the “API” in question is a set of TypeScript type definitions_.
+
+I realized that even a “minor” tweak in a `.d.ts` file (the declaration files that describe a package’s exported types) could break someone’s code. For example, changing a function parameter’s type from `string` to `number` or making an optional property required is clearly a breaking change that should trigger a major version bump. But in a large codebase, it’s all too easy to miss such changes or misclassify them. In a monorepo environment, one package’s type change can ripple out to others – if you don’t bump the right version, consumers may get unwittingly broken code. I needed a safety net.
+
+Interestingly, I wasn’t alone in this concern. Others in the TypeScript community have been discussing how to apply SemVer rigorously to TypeScript types ([SemVer for TS in Practice — Sympolymathesy, by Chris Krycho](https://v5.chriskrycho.com/journal/semver-for-ts-in-practice/#:~:text=Over%20the%20last%20couple%20weeks%2C,if%20the%20answer%20were%20no)). (Even the TypeScript compiler team faces this – virtually every TS release tweaks type checking in ways that _could_ be considered breaking, but bumping the major version every time would be impractical ([Why TypeScript Doesn't Follow Strict Semantic Versioning | Learning TypeScript](https://www.learningtypescript.com/articles/why-typescript-doesnt-follow-strict-semantic-versioning#:~:text=,good%20adherance%20to%20semantic%20versioning))!) All this convinced me: it was time to automate the detection of **what kind of SemVer bump a set of TypeScript changes warrants**. That’s how the idea for **`ts-semver-detector`** was born – a tool to analyze differences in `.d.ts` files and tell you whether to release a new major, minor, or patch version.
+
+## Sparking an Idea: Diffing Type Declarations to Enforce SemVer
+
+The core idea was simple: if I could compare the “before” and “after” versions of a library’s TypeScript declarations, I could programmatically determine the nature of changes. The `.d.ts` files are essentially the public contract of a TypeScript library. By diffing the old and new declaration files, we can catch things like:
+
+- **Removed or changed exports** – e.g. a class or type no longer exported (likely a breaking change).
+
+- **Interface modifications** – new properties (additive, non-breaking), removed properties (breaking), or property type changes.
+
+- **Function signature changes** – parameters added, removed, or their types altered; return type changes.
+
+- **Type alias changes** – e.g. a union type gaining a new variant (which might actually _widen_ and be backward-compatible) versus losing one (narrowing, potentially breaking).
+
+
+I envisioned rules for each scenario: some changes should count as _major_ (incompatible API changes), others _minor_ (backwards-compatible additions or expansions), and some as _patch_ (internal or type bug fixes that don’t impact the API). With those rules, the tool could recommend the correct version bump automatically.
+
+The prospect was exciting but also daunting. TypeScript’s type system is _deep_. How would I parse and compare two `.d.ts` files reliably? Writing a TypeScript AST parser from scratch was out of the question – thankfully, TypeScript’s compiler API can do the heavy lifting of parsing. Still, walking the AST and implementing all those comparison rules sounded like a lot of work. This is where a certain AI buddy of mine entered the picture.
+
+## Bootstrapping with AI: Claude to the Rescue
+
+Instead of coding everything from scratch, I decided to experiment with an AI pair programmer – **Claude 3.5** (from Anthropic). I’d used GitHub Copilot before for small suggestions, but Claude was more like a conversational partner. I essentially brainstormed the design with Claude and even got it to generate initial code for parts of the problem.
+
+For example, I asked Claude something like: _“How can I use the TypeScript compiler API to compare two `.d.ts` files and detect differences in their exported types?”_ In seconds, Claude outlined an approach: use `ts.createSourceFile` to parse each file, traverse the AST nodes, collect declarations, then compare their signatures. It even produced a rough TypeScript snippet for traversing the AST and identifying changes (listing out added/removed members, changes in function parameters, etc.). This was a huge time-saver – it gave me a starting point that would have taken hours if I was digging through TypeScript’s docs alone.
+
+Using AI in this way felt like having a knowledgeable (if sometimes over-optimistic) co-developer. Claude helped bootstrap the project structure: suggesting I break the problem down into modules – one for parsing files, one for computing diffs, one for applying SemVer rules. I followed this outline, creating a parser module to extract a simplified representation of declarations from a `.d.ts` file, and a diff module to compare these representations.
+
+Of course, the code that AI provides isn’t perfect. I had to review and test it. Initially, Claude’s output skipped some details – for instance, it didn’t account for TypeScript’s subtle distinction between a type being _optional_ vs. _undefinedable_, and it glossed over generic type parameters in functions. But that was okay; the AI got me ~80% of the way, and I was happy to fill in the rest. The key was that I wasn’t starting from a blank slate.
+
+## Under the Hood: How _ts-semver-detector_ Works
+
+With the initial scaffolding in place, I dug into the implementation. The workflow of `ts-semver-detector` looks roughly like this:
+
+1. **Parse the old and new `.d.ts` files** – produce an AST for each and extract all exported declarations (interfaces, classes, type aliases, functions, enums, etc.).
+
+2. **Compare the declarations** – find what was removed, added, or changed.
+
+3. **Apply SemVer rules** – classify each change as breaking (**major**), non-breaking additive (**minor**), or safe bug fix (**patch**).
+
+4. **Roll up a recommendation** – if any change is major, bump major; else if any change is minor, bump minor; otherwise patch.
+
+
+Let’s peek at some pseudo-code to illustrate parts of this process. First, how do we parse a `.d.ts` file and collect its declarations? We leverage the TypeScript compiler API to create an AST and then walk through it:
+
+```ts
+import ts from 'typescript';
+
+// Parse a .d.ts file content into an AST
+const sourceFile = ts.createSourceFile('old.d.ts', oldDtsContent, ts.ScriptTarget.ESNext, true);
+
+// Visit AST nodes to collect declarations
+const declarations = new Map<string, Declaration>();
+
+sourceFile.forEachChild(node => {
+  if (ts.isInterfaceDeclaration(node)) {
+    declarations.set(node.name.text, {
+      kind: 'interface',
+      name: node.name.text,
+      members: node.members.map(m => ({
+        name: m.name.getText(),
+        optional: !!m.questionToken,
+        type: m.type.getText()
+      }))
+    });
+  }
+  // ...handle other declaration kinds (classes, functions, type aliases, etc.)
+});
+```
+
+_Code walkthrough:_ Here we parse the contents of `old.d.ts` and iterate over its top-level AST nodes. For each interface declaration, we record its name and the list of members. For each member, we capture its name, whether it’s optional (`m.questionToken` indicates a `?` in the property, meaning optional), and the textual form of its type. We’d do similar things for functions (capturing their parameter types and return type), type aliases (the type they alias), classes, and so on. By the end, we have a map of declaration name to a simplified representation of the API. We repeat this for the “new” file as well.
+
+Next comes the diffing logic – comparing the old and new declarations. This is where the SemVer rules come into play. Let’s focus on an example: **interfaces**. Suppose we have an interface `User` in v1 and another `User` in v2 of our library. We need to compare their members:
+
+```ts
+// Compare interface property changes
+for (const prop of oldInterface.members) {
+  const newProp = newInterface.members.find(p => p.name === prop.name);
+
+  if (!newProp) {
+    changes.push({ level: 'major', message: `Removed property ${prop.name}` });
+  } else {
+    // Optionality changed?
+    if (prop.optional && !newProp.optional) {
+      changes.push({ level: 'major', message: `Property ${prop.name} became required` });
+    } else if (!prop.optional && newProp.optional) {
+      changes.push({ level: 'minor', message: `Property ${prop.name} is now optional` });
+    }
+    // Type changed?
+    if (prop.type !== newProp.type) {
+      const changeType = isTypeCompatible(prop.type, newProp.type) ? 'minor' : 'major';
+      changes.push({ level: changeType, message: `Type of ${prop.name} changed from ${prop.type} to ${newProp.type}` });
+    }
+  }
+}
+
+// New properties added in new interface
+for (const newProp of newInterface.members) {
+  const oldProp = oldInterface.members.find(p => p.name === newProp.name);
+  if (!oldProp) {
+    changes.push({ level: 'minor', message: `Added new property ${newProp.name}` });
+  }
+}
+```
+
+In plain English, this snippet does the following:
+
+- Loop through each property in the old interface:
+
+    - If a property from the old version is **missing** in the new version, that’s a removal – a breaking change (major).
+
+    - If the property exists in both, check if its optional flag changed:
+
+        - Went from optional in old to required in new? That’s a breaking change (because code that didn’t provide that property will now error) – mark **major**.
+
+        - Went from required to optional? That’s a backward-compatible relaxation – mark **minor** (it’s a new capability to omit the property).
+
+    - Also check if the **type** of the property changed:
+
+        - If yes, we determine if the new type is backward-compatible with the old type. For example, changing a property’s type from `string` to `string|number` _widened_ it (which might be okay for older consumers – code expecting a string still sees a string, the type just allows more). That could be considered a minor change (not breaking existing usage). On the other hand, changing `string|number` to just `string` _narrowed_ it, likely breaking any code that was supplying a number before – that’s major. Our pseudo-code calls an `isTypeCompatible` helper to decide this (essentially following TypeScript’s assignability rules). If not compatible, we label it **major**; if it’s just an expansive change, **minor**.
+
+- Then we loop through each property in the new interface to catch **added properties** (those with no match in the old interface). New properties are usually backward-compatible (existing code doesn’t know about them and isn’t affected), but they constitute a new feature – mark them **minor**.
+
+
+This same philosophy extends to other kinds of declarations:
+
+- **Functions**: Removing a function or changing a parameter type in an incompatible way is major. Adding a new function overload or making a parameter optional is minor (existing calls still work, new ways to call are added). Adding a required parameter in the middle of a function signature is breaking (major) because it breaks calls that don’t supply it. Changing a function’s return type can be tricky: if the return type is narrowed (e.g. was `any`, now `string`), consumers might actually break if they were expecting the broader type – we’d lean towards treating that as a major change just to be safe.
+
+- **Type aliases and enums**: Removing or renaming types is a major. Adding a new union member to a type alias might be minor (if code wasn’t exhaustively checking the union, it won’t break, but if someone _was_ doing a switch over all possible variants, their code might now get a compiler warning of a not-exhaustive check – in doubt, we might mark it minor or even major if we’re conservative). Changing an enum by removing a value is major; adding a new enum value is usually minor.
+
+- **Classes**: Very similar to interfaces for the shape of their public API. Changing a class property’s type or access modifier, or removing a method, etc., would be assessed for breakage the same way.
+
+
+After analyzing all such differences, `ts-semver-detector` compiles a list of changes with their severities. For example, it might produce a change list like:
+
+```json
+{
+  "changeType": "major",
+  "changes": [
+    "BREAKING: Changed member 'age' in interface 'User' from optional to required"
+  ]
+}
+```
+
+This indicates the tool found a breaking change (hence recommends a **major** bump) and provides a human-readable description of what changed ([GitHub - Bryan-Cee/ts-semver-analyzer: A TypeScript library for detecting breaking changes and semantic versioning updates between TypeScript definitions](https://github.com/Bryan-Cee/ts-semver-analyzer#:~:text=%7B%20changeType%3A%20,%5D%2C)). In our example, we made the `age` property of interface `User` mandatory whereas it used to be optional – definitely a breaking API change. The tool prefixes the message with "BREAKING:" for major changes to draw attention.
+
+Internally, deciding the recommended bump is as simple as looking at the highest level of change found. If any change is marked major, the overall `changeType` becomes "major". Otherwise, if there’s at least one minor and none are major, it’s "minor". If all changes are patch-level or there are no changes, it’s "patch". (No changes at all would ideally result in a message that no version bump is needed.)
+
+One nice feature I built in is a **reporting output**: you can get the results as JSON (for machines/CI), plain text (for quick CLI usage), or even HTML. The HTML report presents the diff in a pretty format for easier reviewing – useful if you want to, say, post a diff report for reviewers or attach it to a release note.
+
+## When TypeScript Gets Tricky: Edge Cases and Complex Types
+
+Handling the basics was straightforward, but TypeScript has a lot of advanced type system features. Some changes are hard to automatically classify. I had to decide how the tool should behave in these edge cases. My philosophy was to **err on the side of caution** – if in doubt, flag it as potentially breaking (major) or at least as needing attention, rather than silently treating it as safe.
+
+Consider **conditional types** (the `A extends B ? X : Y` kind of types) or **mapped types**, or changes deep inside complex generic types. Detecting whether a change in a conditional type is breaking can be almost as hard as solving the Halting Problem! 😅 For example, if an exported conditional type’s condition changed, the tool can’t easily know how that affects all possible inputs. In such cases, `ts-semver-detector` will typically report the change with a note that it’s a complex type change. It might conservatively classify it as a breaking change, or simply flag it and default to a higher severity. The idea is to alert the developer: “Hey, something non-trivial changed in the types. Please double-check if this could impact users.”
+
+**Type widening vs. narrowing** is another subtle case we touched on. The tool uses TypeScript’s subtype rules to gauge compatibility. For instance, if a function parameter’s type widened (allowing more types than before), that shouldn’t break existing callers – existing code was passing a subset of those types anyway. But if a return type widened (the function can return more possible types than before), consumers might be forced to handle new cases – that could be breaking for them. These nuances are hard to capture perfectly. I leaned on TypeScript’s assignability logic for help – effectively asking, “Is the new type assignable to the old type, or vice-versa?” If not, it’s likely a breaking change.
+
+One particularly gnarly scenario is when you have _generic type parameters with constraints_ that change. Imagine a function `<T extends string> foo(x: T): T` and it changes to `<T extends string | number> foo(x: T): T`. This is a widening of T’s constraint. From the caller’s perspective, if they used to call `foo("hello")`, that still works. If they called `foo(42)` before, it wouldn’t even compile previously; now it would. So that change is additive (no existing code breaks, new usage is enabled) – we’d call it minor. But had it been the opposite (narrowing the constraint), existing calls that passed a now-forbidden type would break – major. The tool handles many of these cases, but I made sure to have unit tests for them, and any scenario the tool isn’t sure about, it leans towards marking as breaking or at least mentioning it.
+
+To be honest, some advanced TypeScript features still outstrip the tool’s current analysis capabilities. I noted in the project readme and TODOs that support for things like **template literal types** or extremely convoluted generics would need more work. In those cases, _ts-semver-detector_ might not have special logic and will just notice that “something changed” in the text of the type. By default, that change will be reported, and if it’s not clearly a simple additive change, it might be considered breaking just to be safe. As the tool evolves, we hope to handle more of these gracefully (perhaps with help from open-source contributors who enjoy the challenge of TypeScript’s edge cases!).
+
+## AI: A Double-Edged Sword in Development
+
+After the initial success with using Claude AI to bootstrap the project, I continued to use it for incremental improvements – but with a lot more caution and supervision. This experience revealed both the **power** and **limitations** of AI-assisted coding in a very tangible way.
+
+On the upside, Claude 3.5 was fantastic for generating boilerplate and even suggesting algorithms. It sped up my work significantly. For example, writing the code to traverse two ASTs and compare them would have been pretty tedious, but Claude spat out a decent draft in moments. It also helped with mundane tasks like writing repetitive cases for each kind of TypeScript node. Essentially, it handled the grunt work and even gave me ideas for structuring the code (like using a map of declaration name to info, which turned out to be a convenient approach).
+
+However, as I expanded the tool, I encountered the **limitations**. One challenge was that as the codebase grew larger, it became harder to prompt the AI with enough context. If I asked it for changes in one part, it sometimes didn’t remember what we had established elsewhere, leading to suggestions that conflicted with existing code. For instance, at one point I wanted to add support for checking **readonly modifiers** on interface properties (making a property read-only could arguably be a breaking change, since someone writing to that property will get an error now). When I prompted Claude to implement handling for `readonly` properties, it produced code, but it assumed a different structure for the data than I was actually using. I had to manually reconcile these differences. It was a reminder that AI isn’t a magic replacement for understanding your own code – it’s more like an enthusiastic intern that sometimes overlooks details.
+
+Another example: The AI initially missed the notion of **private or internal** members. In a library’s `.d.ts`, you might mark some declarations with `/** @internal */` or similar, meaning consumers shouldn’t use them. Ideally, changes to those wouldn’t count as breaking changes (since they’re not part of the public API). I hadn’t considered that initially, but when a colleague pointed it out, I realized I should add an option to ignore internal/private members. I implemented that logic myself. (I later noticed I could have asked the AI, but by then I knew exactly what to do.) This showed a limitation: AI will only include what you ask it to or what it “thinks” of – it might not have the context of best practices for your specific scenario unless you explicitly prompt for them.
+
+I also discovered that for complex type compatibility checks, AI’s suggestions might compile, but not be _entirely_ correct in the logic. I had a function `isTypeCompatible(oldType, newType)` to determine if a type change was safe. Claude attempted an implementation using some heuristics (like if the new type text contains the old type text, etc.), but that was too naive. Eventually, I had to rewrite that part using the TypeScript type checker API properly to get a robust answer. This was an interesting turning point: I moved from relying on AI to doing deeper research myself (reading TypeScript’s `TypeChecker` documentation and experimenting). It was challenging, but by now I had a much better understanding of the overall codebase, so writing these improvements felt natural.
+
+In short, AI greatly accelerated the initial development and gave me a solid foundation, but as the project progressed, **human insight and manual refinement became crucial**. I treated AI’s output as a draft – incredibly useful for momentum, but not the final word. Every line still went through the filter of my brain, tests, and real-world trial.
+
+## Learning to Fly: Owning the Code and Embracing Contribution
+
+One unexpected benefit of this project was how much I **learned by building it**. At the start, I had a decent grasp of TypeScript, but I had never worked so closely with the TypeScript compiler API or thought so deeply about what constitutes a “breaking change” in type definitions. By debugging edge cases and refining the rules, I ended up diving into advanced TypeScript concepts. It felt like a crash course in both the language’s type system and in API design philosophy.
+
+Using AI in the loop actually helped my learning too – it’s like I had a mentor giving me hints, but I still had to understand and justify each change. There was a point when the tool was mostly working for basic cases, and I decided to throw it at a real-world scenario: I used it to compare two versions of a small internal library in our monorepo. The results were illuminating. It correctly caught a missing export that I had overlooked manually (saving me from a potential headache), and it flagged a changed type alias as a breaking change. That particular type alias change was something I _thought_ was harmless, but upon investigation, I realized it would have broken consumers’ compilation. The tool was right – and in the process _I_ learned why that subtle change was problematic. Moments like that are incredibly rewarding as a developer: the tool you built teaches you something new about your own code.
+
+Once I was confident in _ts-semver-detector_ for our use cases, I decided to open-source it. I wrote thorough documentation and examples so others could try it out. (The HTML report feature came in handy – I included an example that generates a visual diff of changes between two library versions.) I even designed it to be configurable: you can override rule severities or add custom rules via a config file, because I know not every project will treat changes exactly the same. For instance, some might treat widening a return type as minor instead of major. The tool can be tuned to those preferences.
+
+Open-sourcing has led to some community feedback. A few contributors opened issues and pull requests to enhance the analyzer – like adding support for **function overloads comparison** and improving detection of generic type parameter changes. One contributor was excited about using it in a CI pipeline: they set up a GitHub Action that runs _ts-semver-detector_ on each pull request to automatically warn if a developer’s changes would require a major or minor version bum ([GitHub - Bryan-Cee/ts-semver-detector](https://github.com/Bryan-Cee/ts-semver-detector#:~:text=,TypeScript%20API%20changes%20run%3A)) ([GitHub - Bryan-Cee/ts-semver-detector](https://github.com/Bryan-Cee/ts-semver-detector#:~:text=,new%20%24%7BCI_MERGE_REQUEST_TARGET_BRANCH_SHA%7D%3Atypes%2Findex.d.ts))】. That kind of integration underscores the tool’s purpose – preventing those “Oops, we published a breaking change as a minor version” incidents by catching them early.
+
+Perhaps one of the most gratifying things is seeing junior developers play with the tool and, in the process, learn about SemVer and TypeScript. The narrative style of the output (e.g. “BREAKING: property X became required”) makes it a bit of a teaching tool. It explains _why_ something is considered a breaking change. I’ve had teammates say that using the tool on their code taught them a couple of TypeScript gotchas. It certainly taught me plenty while building it!
+
+## SemVer Confidence in the Monorepo and Beyond
+
+With _ts-semver-detector_ in our toolkit, our monorepo’s release process became smoother. We set it up as a guardrail: before publishing a package, we run the detector against the last released type definitions. If it says a major bump is needed but our package.json is still at a lower version, we know to update the version appropriately **before** we publish. In a fast-paced development environment, having this automated check adds confidence. It’s much harder for an accidental breaking change to slip out as a minor update now.
+
+Working with multiple interdependent packages, we also found value in generating diff reports between versions. For example, if PackageA depends on PackageB, and PackageB’s maintainer wants to ensure they don’t break PackageA, they can run the tool on PackageB’s types to double-check. It’s like having unit tests for your API surface – except the tests are automatically derived from the type definitions.
+
+Of course, _ts-semver-detector_ isn’t a silver bullet. It doesn’t replace thoughtful consideration of API design. There are cases where you might decide to bump major for reasons the tool can’t detect (e.g. a semantic change in runtime behavior that doesn’t show up in types). And there might be times you intentionally decide not to bump major even if a type technically changed in a breaking way (perhaps because usage of that type was practically nil – though that’s a slippery slope!). But as a helper, it takes care of the routine checks so we maintainers can focus on the bigger picture.
+
+## Conclusion: Build, Learn, and Embrace AI in Your Workflow
+
+Creating _ts-semver-detector_ has been a journey at the intersection of automation, TypeScript wizardry, and AI-assisted development. What started as a small utility to scratch an itch turned into a project that taught me and others about the intricacies of TypeScript’s type system and the importance of semantic versioning. It’s pretty fulfilling to go from manually worrying _“Did I bump the version correctly?”_ to letting a tool confidently tell you _“this should be a minor”_.
+
+Perhaps the biggest takeaway for me is how **AI tools like Claude** can turbocharge a developer’s productivity and learning. They won’t do everything for you – and you have to approach their output critically – but they can help you leap over the initial hurdles and enter a rapid iteration loop. In my case, AI helped me implement a working prototype of a complex idea in a short time. From there, I was able to iteratively refine it, each time deepening my understanding. The tool and I sort of learned together: it learned from my prompts, and I learned from its suggestions.
+
+I hope this story inspires you to explore adding AI to your own workflow and to build that tool or project you’ve been mulling over. There’s nothing quite like the experience of having an idea, bringing it to life, and in the process leveling up your skills. And if that idea can help others – even better! Open-sourcing _ts-semver-detector_ and inviting the community in has been rewarding; it’s amazing to collaborate on something that can benefit so many TypeScript maintainers out there facing the same SemVer challenges.
+
+So go forth and create. Whether it’s leveraging AI to tackle a tough coding problem, or contributing to open-source projects like this one, you’ll grow as a developer. With tools to catch our mistakes and AI to boost our capabilities, we can code more fearlessly. At the end of the day, it’s all about learning by building – and having some fun along the way. Happy coding, and may your version bumps always be the right ones! 🚀
+
+**Sources:**
+
+1. TypeScript Semantic Versioning context and definitio ([Why TypeScript Doesn't Follow Strict Semantic Versioning | Learning TypeScript](https://www.learningtypescript.com/articles/why-typescript-doesnt-follow-strict-semantic-versioning#:~:text=Semver%20dictates%20that%20versions%20adhere,Patch%20format)) ([Why TypeScript Doesn't Follow Strict Semantic Versioning | Learning TypeScript](https://www.learningtypescript.com/articles/why-typescript-doesnt-follow-strict-semantic-versioning#:~:text=,good%20adherance%20to%20semantic%20versioning))8】
+
+2. _Semantic Versioning for TypeScript Types_ – community discussion on applying SemVer to TS type chang ([SemVer for TS in Practice — Sympolymathesy, by Chris Krycho](https://v5.chriskrycho.com/journal/semver-for-ts-in-practice/#:~:text=Over%20the%20last%20couple%20weeks%2C,if%20the%20answer%20were%20no))3】
+
+3. Example output from _ts-semver-detector_ showing a detected breaking chan ([GitHub - Bryan-Cee/ts-semver-analyzer: A TypeScript library for detecting breaking changes and semantic versioning updates between TypeScript definitions](https://github.com/Bryan-Cee/ts-semver-analyzer#:~:text=%7B%20changeType%3A%20,%5D%2C))5】
+
+4. Excerpts from the _ts-semver-detector_ repository and usage in CI pipelin ([GitHub - Bryan-Cee/ts-semver-detector](https://github.com/Bryan-Cee/ts-semver-detector#:~:text=,TypeScript%20API%20changes%20run%3A)) ([GitHub - Bryan-Cee/ts-semver-detector](https://github.com/Bryan-Cee/ts-semver-detector#:~:text=,new%20%24%7BCI_MERGE_REQUEST_TARGET_BRANCH_SHA%7D%3Atypes%2Findex.d.ts))4】
