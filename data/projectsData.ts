@@ -16,7 +16,7 @@ const projectsData = {
       title: 'finexapp',
       description: `Financial tracking app. Track your accounts as you spend money easily.`,
       imgSrc: '/static/images/finexapp.vercel.app_.png',
-      href: 'https://finexapp.vercel.app/',
+      href: 'https://finexapp-web.vercel.app/',
     },
   ],
   designs: [
