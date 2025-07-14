@@ -18,6 +18,12 @@ const projectsData = {
       imgSrc: '/static/images/finexapp.vercel.app_.png',
       href: 'https://finexapp-web.vercel.app/',
     },
+    {
+      title: 'famlink',
+      description: `Family linking app. Connect with your family members and track their expenses easily.`,
+      imgSrc: '/static/images/famlink.vercel.app_.png',
+      href: 'https://famlink.vercel.app/',
+    },
   ],
   designs: [
     {
